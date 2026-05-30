@@ -70,21 +70,6 @@ http://<your-server-ip>:50906
 
 ---
 
-## Screenshots
-
-*Replace these placeholders with your actual screenshots.*
-
-### Web Terminal
-
-![Web Terminal](https://placehold.co/800x420/0c0c10/00ff88?text=Web+Terminal)
-
-### System Dashboard
-
-![System Dashboard](https://placehold.co/800x420/0c0c10/4488ff?text=System+Dashboard)
-
-### File Manager
-
-![File Manager](https://imgur.com/a/7ChWp2g)
 
 
 ---
