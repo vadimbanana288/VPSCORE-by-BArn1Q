@@ -1,71 +1,209 @@
-# VPS Core — Turn Minecraft hosting into a VPS
+<pre>
+  _    ______  _____ __________  ____  ______      
+ | |  / / __ \/ ___// ____/ __ \/ __ \/ ____/      
+ | | / / /_/ /\__ \/ /   / / / / /_/ / __/         
+ | |/ / ____/___/ / /___/ /_/ / _, _/ /___         
+ |___/_/    /____/\____/\____/_/ |_/_____/ _______ 
+    / /_  __  __   / __ )/   |  _________ <  / __ \
+   / __ \/ / / /  / __  / /| | / ___/ __ \/ / / / /
+  / /_/ / /_/ /  / /_/ / ___ |/ /  / / / / / /_/ / 
+ /_.___/\__, /  /_____/_/  |_/_/  /_/ /_/_/\___\_\ 
+       /____/                                       
+</pre>
 
-**VPS Core** is a self-contained Java server that transforms any Pterodactyl Minecraft container into a fully functional virtual private server with SSH access and a web management interface.
+<h1 align="center">VPS Core</h1>
+
+<p align="center">
+  <strong>Turn any Minecraft hosting server into a full-featured VPS — no root required.</strong>
+  <br>
+  Java 21 • Pterodactyl • Web Terminal • SSH • SFTP • Monitoring
+</p>
+
+<p align="center">
+  <b>Desktop environment</b> 🚧 <i>under development — coming soon</i>
+</p>
+
+---
 
 ## Features
 
-- **SSH Server** — Full SSH access via Apache MINA SSHD
-- **Web Interface** — Terminal, file manager, process monitor, system info
-- **Command Execution** — Execute commands via REST API
-- **File Management** — Browse, read files on the server
-- **Process Manager** — Monitor and manage running processes
-- **Resource Monitoring** — CPU, memory, disk usage tracking
-- **Remote Desktop** — Xvfb + x11vnc + Fluxbox via noVNC in browser
-- **Security** — IP-based authentication, rate limiting
-- **Pterodactyl Integration** — Auto-detects Pterodactyl environment, works with egg system
+| Feature | Description |
+|---------|-------------|
+| **🌐 Web Terminal** | In-browser shell, type commands like a real terminal |
+| **🔐 SSH Server** | Full SSH access with password / TOTP auth |
+| **📁 File Manager** | Browse, upload, download files from the web UI |
+| **📂 SFTP** | File transfer over SSH (same port) |
+| **📊 Monitoring** | CPU, memory, disk — real-time + Prometheus metrics |
+| **🔌 Port Proxy** | TCP tunnel forwarding through allocated ports |
+| **⚙️ Process Manager** | Run and supervise background tasks |
+| **💾 Backups** | Scheduled automatic file backups |
+| **🤖 Bots** | Manage your VPS via Telegram or Discord |
+| **🖥 Desktop** | Remote desktop (VNC in browser) — 🚧 in development |
+
+---
 
 ## Quick Start
 
 ### Prerequisites
+
+- A Pterodactyl game server (Minecraft, etc.) or any Linux VM
 - Java 21 (Temurin recommended)
-- Pterodactyl server (or any Linux server with Java 21)
-- At least 2 ports available (web + SSH)
+- At least **2 allocated ports** (web + SSH)
 
-### Installation
-
-1. Upload `server.jar` and `vpscore.yml` to your server directory
-2. Start with: `java -Xms512M -Xmx1G -jar server.jar`
-3. Access the web interface at `http://your-server:PORT/terminal`
-4. Connect via SSH: `ssh root@your-server -p SSH_PORT`
-
-### Configuration
-
-Create `vpscore.yml` in the same directory as `server.jar`:
-
-```yaml
-web_terminal_port: 8080
-ssh_port: 2222
-auth_required: false
-password: "admin"
-```
-
-## Building from Source
+### Install & Run
 
 ```bash
-git clone https://github.com/vpscore/vpscore.git
+# 1. Download server.jar from Releases
+# 2. Upload to your server directory
+# 3. Start:
+
+java -Xms6G -Xmx6G -jar server.jar
+```
+
+VPS Core auto-detects Pterodactyl allocated ports and generates `vpscore.yml` automatically.
+
+### Open the Web UI
+
+```
+http://<your-server-ip>:50906
+```
+
+---
+
+## Screenshots
+
+*Replace these placeholders with your actual screenshots.*
+
+### Web Terminal
+
+![Web Terminal](https://placehold.co/800x420/0c0c10/00ff88?text=Web+Terminal)
+
+### System Dashboard
+
+![System Dashboard](https://placehold.co/800x420/0c0c10/4488ff?text=System+Dashboard)
+
+### File Manager
+
+![File Manager](https://imgur.com/a/7ChWp2g)
+
+
+---
+
+## Configuration
+
+VPS Core reads `vpscore.yml` from the working directory.  
+If the file doesn't exist, it's generated on first launch.
+
+### Port Mapping
+
+With **only 2 allocated ports** (e.g. `50906` and `50398`):
+
+| Index | Port  | Service                        |
+|-------|-------|--------------------------------|
+| [0]   | 50906 | Web UI + REST API + Prometheus |
+| [1]   | 50398 | SSH + SFTP                     |
+
+If more ports are available, Telnet, WebDAV, and proxy tunnels are enabled automatically.
+
+### Minimal Config Example
+
+```yaml
+# vpscore.yml
+mode: standalone
+
+shell:
+  web_terminal_port: 50906
+  web_terminal_enabled: true
+  ssh_port: 50398
+  ssh_enabled: true
+
+network:
+  enable: true
+  firewall_enable: true
+
+filesystem:
+  sftp_enabled: true
+  sftp_port: 50398
+  backups_enable: true
+```
+
+### CLI Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `--standalone` | Full VPS mode (default) |
+| `--minimal` | Shell + files only, no network |
+| `--config <path>` | Custom config path |
+| `--pterodactyl-ports <ports>` | Manually specify allocated ports (comma-separated) |
+
+---
+
+## Usage
+
+### Pterodactyl Console Commands
+
+```
+exec curl -s ifconfig.me          # Run any command
+ps                                # List managed processes
+sysinfo                           # System information
+fs cat /home/container/file.txt   # Read file contents
+stop                              # Shutdown
+```
+
+### Web Terminal
+
+Open `http://<server-ip>:50906` — full shell in your browser.
+
+### SSH
+
+```bash
+ssh root@<server-ip> -p 50398
+```
+
+Default password: `vpscore` (change in config).
+
+### SFTP
+
+```bash
+sftp -P 50398 root@<server-ip>
+```
+
+---
+
+## Services Reference
+
+| Service | Port  | Enabled | Notes |
+|---------|-------|---------|-------|
+| Web UI + API  | 50906  | ✅ | Main interface |
+| SSH | 50398   | ✅    | Shell access            |
+| SFTP | 50398  | ✅ | Over SSH               |
+| Prometheus    | 50906 | ✅ | Shares web port  |
+| Desktop (VNC) | - | 🚧 | Work in progress  |
+
+---
+
+## Build from Source
+
+```bash
+git clone https://github.com/user/vpscore.git
 cd vpscore
 ./gradlew fatJar
 ```
 
-The compiled jar will be at `build/libs/vpscore-*-all.jar`.
+Output: `build/libs/vpscore-1.0.0-all.jar`
 
-## API
+---
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Health check |
-| `/api/info` | GET | System information |
-| `/api/sysinfo` | GET | OS/Java details |
-| `/api/exec` | POST | Execute command |
-| `/api/processes` | GET | List processes |
-| `/api/fs/ls?path=` | GET | List directory |
-| `/api/fs/cat?path=` | GET | Read file |
-| `/api/desktop/status` | GET | Desktop status |
-| `/api/desktop/install` | POST | Install desktop |
-| `/api/desktop/start` | POST | Start desktop |
-| `/api/desktop/stop` | POST | Stop desktop |
-| `/api/desktop/vnc` | WS | VNC WebSocket proxy |
+
+
+---
 
 ## License
 
-MIT License — see [LICENSE](LICENSE)
+MIT — see [LICENSE](LICENSE).
+
+---
+
+<p align="center">
+  <sub>Built for Pterodactyl • Runs everywhere Java 21 is available</sub>
+</p>
