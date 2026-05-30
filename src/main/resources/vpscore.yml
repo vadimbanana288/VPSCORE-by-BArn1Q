@@ -1,0 +1,146 @@
+# VPS Core Configuration
+# ======================
+# This file is generated automatically on first launch.
+# Edit it to customize your VPS instance.
+# Restart the service after making changes.
+
+# Operation mode: standalone | minimal | attach | wrapper
+mode: standalone
+
+# Paths
+working_dir: "."
+temp_dir: "/tmp"
+
+# ───────────────────────────────────────
+# Shell Services
+# ───────────────────────────────────────
+shell:
+  enable: true
+  default_shell: "/bin/bash"
+  max_processes: 50
+
+  # Web terminal (HTTPS on this port for REST API + terminal)
+  web_terminal_enabled: true
+  web_terminal_port: 50906
+
+  # SSH server
+  ssh_enabled: true
+  ssh_port: 50398
+
+  # Telnet (requires an additional allocation)
+  telnet_enabled: false
+  telnet_port: 50907
+
+# ───────────────────────────────────────
+# Network & Tunnels
+# ───────────────────────────────────────
+network:
+  enable: true
+
+  # Firewall
+  firewall_enable: true
+
+  # Dynamic proxy tunnel range (requires additional allocations)
+  proxy_start_port: 25565
+  proxy_end_port: 25600
+
+  # DNS server (requires port 53, usually blocked)
+  dns_enable: false
+
+  # Reverse proxy
+  reverse_proxy_enable: false
+  reverse_proxy_http_port: 80
+  reverse_proxy_https_port: 443
+  auto_tls: false
+  domain: ""
+
+# ───────────────────────────────────────
+# File System
+# ───────────────────────────────────────
+filesystem:
+  enable: true
+
+  # SFTP (uses the SSH port by default)
+  sftp_enabled: true
+  sftp_port: 50398
+
+  # WebDAV (requires an additional allocation)
+  webdav_enabled: false
+  webdav_port: 50910
+
+  # Sandbox mode
+  sandbox_enable: false
+  sandbox_path: ""
+
+  # Automatic backups
+  backups_enable: true
+  backup_interval: "0 0 * * *"
+  backup_dir: "backups"
+
+# ───────────────────────────────────────
+# Monitoring
+# ───────────────────────────────────────
+monitor:
+  enable: true
+
+  # Prometheus metrics (shares the web port)
+  metrics_port: 50906
+  prometheus_enable: true
+
+  # Resource limits (0 = no limit)
+  cpu_limit: 100
+  ram_limit_mb: 0
+  disk_limit_mb: 0
+
+  # cgroups (requires host support)
+  cgroups_enable: true
+
+# ───────────────────────────────────────
+# Bots (Telegram / Discord)
+# ───────────────────────────────────────
+bot:
+  enable: false
+  telegram_token: ""
+  discord_token: ""
+  admin_chat_id: ""
+
+# ───────────────────────────────────────
+# Security
+# ───────────────────────────────────────
+security:
+  enable: true
+
+  # Authentication
+  auth_required: false
+  auth_mode: "password"
+  password: "vpscore"
+
+  # Two-factor
+  totp_required: false
+
+  # Brute-force protection
+  max_login_attempts: 5
+  ban_duration_minutes: 30
+
+  # Audit log
+  audit_log: true
+  audit_log_file: "audit.log"
+
+# ───────────────────────────────────────
+# Hosting Compatibility
+# ───────────────────────────────────────
+hosting:
+  enable: true
+  auto_detect: true
+  bypass_restrictions: true
+  hide_processes: true
+  transport_mode: "auto"
+
+# ───────────────────────────────────────
+# Updates
+# ───────────────────────────────────────
+update:
+  enable: true
+  auto_update: true
+  update_url: "https://github.com/user/vpscore/releases/latest/download/vpscore.jar"
+  update_check_interval: "0 0 * * *"

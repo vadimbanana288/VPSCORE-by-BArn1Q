@@ -1,0 +1,161 @@
+{
+  "meta": {
+    "version": "PTDL_v2",
+    "update_url": null
+  },
+  "exported_at": "2026-05-26T12:00:00+03:00",
+  "name": "VPS Core",
+  "author": "vpscore@io",
+  "uuid": "b3a7f1e8-c4d2-4a5b-9f6e-7d1c2a3b4e5f",
+  "description": "Standalone VPS ядро для Pterodactyl. Автоопределяет порты из PTERODACTYL_ALLOCATED_PORTS. SSH, терминал, файловый менеджер, туннели, прокси, Telegram/Discord боты, Prometheus.",
+  "features": [],
+  "docker_images": {
+    "VPS Core Image": "ghcr.io/user/vpscore:latest"
+  },
+  "file_denylist": [],
+  "startup": "java -Xms{{SERVER_MEMORY}}M -Xmx{{SERVER_MEMORY}}M -jar vpscore.jar --{{VPS_MODE}}{{VPS_ARGS}} --pterodactyl-ports {{PTERODACTYL_ALLOCATED_PORTS}}",
+  "config": {
+    "files": "{}",
+    "startup": "{\"done\": \"VPS Core started successfully\", \"userInteraction\": []}",
+    "logs": "{\"custom\": true, \"location\": \"logs/latest.log\"}",
+    "stop": "stop"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/sh\n# VPS Core Egg Installation Script\n\nset -e\n\nARCH=$([[ \"$(uname -m)\" == \"x86_64\" ]] && echo \"amd64\" || echo \"arm64\")\ncd /mnt/server\n\n# Download VPS Core\nDOWNLOAD_URL=\"${VPS_DOWNLOAD_URL:-https://github.com/user/vpscore/releases/latest/download/vpscore-all.jar}\"\necho \"Downloading VPS Core from $DOWNLOAD_URL...\"\ncurl -sL \"$DOWNLOAD_URL\" -o vpscore.jar\n\nif [ ! -f vpscore.jar ] || [ $(stat -c%s vpscore.jar) -lt 1000 ]; then\n    echo \"ERROR: Failed to download vpscore.jar\"\n    exit 1\nfi\n\necho \"Downloaded vpscore.jar ($(stat -c%s vpscore.jar) bytes)\"\n\n# Create config\ncat > vpscore.yml << EOF\nmode: ${VPS_MODE:-standalone}\nworking_dir: \"/home/container\"\n\nshell:\n  ssh_port: ${VPS_SSH_PORT:-8022}\n  ssh_enabled: true\n  telnet_port: ${VPS_TELNET_PORT:-8023}\n  telnet_enabled: true\n  web_terminal_port: ${VPS_WEB_PORT:-8080}\n  web_terminal_enabled: true\n  max_processes: 50\n\nnetwork:\n  proxy_start_port: 25565\n  proxy_end_port: 25600\n  firewall_enable: true\n  reverse_proxy_enable: true\n  auto_tls: ${VPS_AUTO_TLS:-false}\n  domain: \"${VPS_DOMAIN:-}\"\n\nfilesystem:\n  sftp_port: ${VPS_SFTP_PORT:-8024}\n  sftp_enabled: true\n  webdav_port: ${VPS_WEBDAV_PORT:-8025}\n  backups_enable: true\n  backup_dir: \"backups\"\n\nmonitor:\n  metrics_port: ${VPS_METRICS_PORT:-9090}\n  prometheus_enable: true\n  cgroups_enable: false\n\nbot:\n  enable: ${VPS_BOT_ENABLE:-false}\n  telegram_token: \"${VPS_TELEGRAM_TOKEN:-}\"\n  discord_token: \"${VPS_DISCORD_TOKEN:-}\"\n\nsecurity:\n  password: \"${VPS_PASSWORD:-vpscore}\"\n  auth_mode: \"password\"\n  max_login_attempts: 5\n  audit_log_file: \"logs/audit.log\"\n\nhosting:\n  auto_detect: true\n  bypass_restrictions: ${VPS_BYPASS:-true}\n  hide_processes: ${VPS_HIDE_PROCESSES:-true}\n\nupdate:\n  auto_update: ${VPS_AUTO_UPDATE:-true}\nEOF\n\necho \"VPS Core installation complete\"\n",
+      "container": "ghcr.io/pterodactyl/installers:alpine",
+      "entrypoint": "ash"
+    }
+  },
+  "variables": [
+    {
+      "name": "Режим работы",
+      "description": "standalone / minimal / attach / wrapper",
+      "env_variable": "VPS_MODE",
+      "default_value": "standalone",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:standalone,minimal,attach,wrapper"
+    },
+    {
+      "name": "Пароль VPS",
+      "env_variable": "VPS_PASSWORD",
+      "default_value": "vpscore",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:128"
+    },
+    {
+      "name": "SSH порт",
+      "env_variable": "VPS_SSH_PORT",
+      "default_value": "8022",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "Telnet порт",
+      "env_variable": "VPS_TELNET_PORT",
+      "default_value": "8023",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "Веб-терминал порт",
+      "env_variable": "VPS_WEB_PORT",
+      "default_value": "8080",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "SFTP порт",
+      "env_variable": "VPS_SFTP_PORT",
+      "default_value": "8024",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "Порт метрик",
+      "env_variable": "VPS_METRICS_PORT",
+      "default_value": "9090",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "Авто TLS",
+      "env_variable": "VPS_AUTO_TLS",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "Домен",
+      "env_variable": "VPS_DOMAIN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "name": "Боты включены",
+      "env_variable": "VPS_BOT_ENABLE",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "Telegram токен",
+      "env_variable": "VPS_TELEGRAM_TOKEN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "name": "Discord токен",
+      "env_variable": "VPS_DISCORD_TOKEN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "name": "Обход ограничений",
+      "env_variable": "VPS_BYPASS",
+      "default_value": "true",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "Скрытие процессов",
+      "env_variable": "VPS_HIDE_PROCESSES",
+      "default_value": "true",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "Автообновление",
+      "env_variable": "VPS_AUTO_UPDATE",
+      "default_value": "true",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "JAR download URL",
+      "env_variable": "VPS_DOWNLOAD_URL",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    }
+  ]
+}

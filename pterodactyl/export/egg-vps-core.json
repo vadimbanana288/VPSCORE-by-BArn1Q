@@ -1,0 +1,187 @@
+{
+  "meta": {
+    "version": "PTDL_v2",
+    "update_url": null
+  },
+  "exported_at": "2026-05-26T12:00:00+03:00",
+  "name": "VPS Core",
+  "author": "vpscore@io",
+  "uuid": "b3a7f1e8-c4d2-4a5b-9f6e-7d1c2a3b4e5f",
+  "description": "Standalone VPS ядро для Pterodactyl. Превращает хостинг в VPS. Автоопределяет порты из PTERODACTYL_ALLOCATED_PORTS. SSH, терминал, файловый менеджер, туннели, прокси, Telegram/Discord боты, Prometheus.",
+  "features": [],
+  "docker_images": {
+    "Java 21 (Temurin)": "ghcr.io/pterodactyl/yolks:java_21",
+    "Java 17 (Temurin)": "ghcr.io/pterodactyl/yolks:java_17",
+    "Java 21 (GraalVM)": "ghcr.io/pterodactyl/yolks:graalvm_21"
+  },
+  "file_denylist": [],
+  "startup": "java -Xms{{SERVER_MEMORY}}M -Xmx{{SERVER_MEMORY}}M -jar vpscore.jar --{{VPS_MODE}}{{VPS_ARGS}} --pterodactyl-ports {{PTERODACTYL_ALLOCATED_PORTS}}",
+  "config": {
+    "files": "{}",
+    "startup": "{\"done\": \"VPS Core started successfully\", \"userInteraction\": []}",
+    "logs": "{\"custom\": true, \"location\": \"logs/latest.log\"}",
+    "stop": "stop"
+  },
+  "scripts": {
+    "installation": {
+      "script": "# Pterodactyl VPS Core Installation Script\n# =========================================\n\nARCH=$([[ \"$(uname -m)\" == \"x86_64\" ]] && echo \"amd64\" || echo \"arm64\")\n\n# Создаём структуру директорий\nmkdir -p /mnt/server/bin /mnt/server/logs /mnt/server/backups\ncd /mnt/server\n\n# Скачиваем VPS Core\nif [[ -z \"{{VPS_DOWNLOAD_URL}}\" ]]; then\n    echo \"[VPS Core] Скачивание последней версии с GitHub...\"\n    curl -sL \"https://github.com/user/vpscore/releases/latest/download/vpscore-all.jar\" \\\n        -o vpscore.jar\nelse\n    echo \"[VPS Core] Скачивание с кастомного URL...\"\n    curl -sL \"{{VPS_DOWNLOAD_URL}}\" -o vpscore.jar\nfi\n\n# Проверка скачанного файла\nif [[ ! -f \"vpscore.jar\" ]] || [[ $(stat -c%s \"vpscore.jar\") -lt 1000 ]]; then\n    echo \"[ERROR] Ошибка скачивания vpscore.jar\"\n    exit 1\nfi\n\necho \"[VPS Core] vpscore.jar скачан: $(stat -c%s \"vpscore.jar\") байт\"\n\n# Создаём конфиг по умолчанию, если его нет\nif [[ ! -f \"vpscore.yml\" ]]; then\n    cat > vpscore.yml << 'YAMLEOF'\nmode: {{VPS_MODE}}\nminimal: false\nworking_dir: \"/home/container\"\n\nshell:\n  enable: true\n  ssh_port: {{VPS_SSH_PORT}}\n  ssh_enabled: true\n  telnet_port: {{VPS_TELNET_PORT}}\n  telnet_enabled: true\n  web_terminal_port: {{VPS_WEB_PORT}}\n  web_terminal_enabled: true\n  default_shell: \"/bin/bash\"\n  max_processes: 50\n\nnetwork:\n  enable: true\n  proxy_start_port: 25565\n  proxy_end_port: 25600\n  firewall_enable: true\n  dns_enable: false\n  dns_port: 53\n  vpn_enable: false\n  reverse_proxy_enable: true\n  reverse_proxy_http_port: 80\n  reverse_proxy_https_port: 443\n  auto_tls: {{VPS_AUTO_TLS}}\n  domain: \"{{VPS_DOMAIN}}\"\n\nfilesystem:\n  enable: true\n  sandbox_enable: false\n  sandbox_path: \"\"\n  sftp_port: {{VPS_SFTP_PORT}}\n  sftp_enabled: true\n  webdav_port: {{VPS_WEBDAV_PORT}}\n  webdav_enabled: false\n  backups_enable: true\n  backup_interval: \"0 0 * * *\"\n  backup_dir: \"backups\"\n\nmonitor:\n  enable: true\n  metrics_port: {{VPS_METRICS_PORT}}\n  prometheus_enable: true\n  cpu_limit: 100\n  ram_limit_mb: 0\n  disk_limit_mb: 0\n  cgroups_enable: false\n\nbot:\n  enable: {{VPS_BOT_ENABLE}}\n  telegram_token: \"{{VPS_TELEGRAM_TOKEN}}\"\n  discord_token: \"{{VPS_DISCORD_TOKEN}}\"\n  slack_token: \"\"\n  admin_chat_id: \"{{VPS_ADMIN_CHAT_ID}}\"\n\nsecurity:\n  enable: true\n  auth_required: true\n  auth_mode: \"password\"\n  password: \"{{VPS_PASSWORD}}\"\n  totp_required: false\n  max_login_attempts: 5\n  ban_duration_minutes: 30\n  audit_log: true\n  audit_log_file: \"logs/audit.log\"\n\nhosting:\n  enable: true\n  auto_detect: true\n  bypass_restrictions: {{VPS_BYPASS}}\n  hide_processes: {{VPS_HIDE_PROCESSES}}\n  transport_mode: \"auto\"\n\nupdate:\n  enable: true\n  auto_update: {{VPS_AUTO_UPDATE}}\n  update_url: \"https://github.com/user/vpscore/releases/latest/download/vpscore-all.jar\"\n  update_check_interval: \"0 0 * * *\"\nYAMLEOF\n    echo \"[VPS Core] Конфиг vpscore.yml создан\"\nfi\n\n# Скачиваем утилиты\necho \"[VPS Core] Скачивание вспомогательных скриптов...\"\n\n# create motd\ncat > bin/motd.sh << 'MOTD'\n#!/bin/bash\nRED='\\033[0;31m'\nGREEN='\\033[0;32m'\nYELLOW='\\033[1;33m'\nCYAN='\\033[0;36m'\nNC='\\033[0m'\nVERSION=$(java -jar vpscore.jar --version 2>/dev/null || echo \"unknown\")\n\necho -e \"${CYAN}============================================\"\necho -e \"  VPS Core v${VERSION}\"\necho -e \"  Pterodactyl VPS Bridge\"\necho -e \"============================================${NC}\"\necho -e \"${GREEN}  SSH:       ssh vps@localhost -p {{VPS_SSH_PORT}}${NC}\"\necho -e \"${GREEN}  Web Term:  http://localhost:{{VPS_WEB_PORT}}/terminal${NC}\"\necho -e \"${GREEN}  API:       http://localhost:{{VPS_WEB_PORT}}/api/health${NC}\"\necho -e \"${YELLOW}  Prometheus: http://localhost:{{VPS_METRICS_PORT}}/metrics${NC}\"\necho -e \"${RED}  Password:  {{VPS_PASSWORD}}${NC}\"\necho -e \"${CYAN}============================================${NC}\"\nMOTD\nchmod +x bin/motd.sh\n\necho \"[VPS Core] Установка завершена\"\necho \"[VPS Core] Запустите сервер для активации VPS Core\"",
+      "container": "ghcr.io/pterodactyl/installers:alpine",
+      "entrypoint": "ash"
+    }
+  },
+  "variables": [
+    {
+      "name": "Режим работы",
+      "description": "Режим запуска VPS Core:\n- standalone — полноценный VPS (рекомендуется)\n- minimal — только shell + файлы (без сети)\n- attach — прикрепиться к существующему процессу\n- wrapper — запустить Minecraft внутри VPS Core\n\nПорты авто-берутся из PTERODACTYL_ALLOCATED_PORTS (если есть).\nМаппинг: [0]=web, [1]=ssh, [2]=telnet, [3]=sftp, [4]=metrics",
+      "env_variable": "VPS_MODE",
+      "default_value": "standalone",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|in:standalone,minimal,attach,wrapper"
+    },
+    {
+      "name": "Дополнительные аргументы JVM",
+      "description": "Дополнительные аргументы для JVM (например --enable-preview)",
+      "env_variable": "VPS_ARGS",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "name": "Пароль VPS",
+      "description": "Пароль для SSH, Telnet и веб-терминала. Рекомендуется сменить после установки.",
+      "env_variable": "VPS_PASSWORD",
+      "default_value": "vpscore_changeme",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string|max:128"
+    },
+    {
+      "name": "SSH порт (авто если Pterodactyl)",
+      "description": "Порт SSH. На Pterodactyl авто-берётся из PTERODACTYL_ALLOCATED_PORTS[1]",
+      "env_variable": "VPS_SSH_PORT",
+      "default_value": "8022",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "Веб-терминал порт (авто если Pterodactyl)",
+      "description": "Порт веб-терминала + REST API. На Pterodactyl = PTERODACTYL_ALLOCATED_PORTS[0]",
+      "env_variable": "VPS_WEB_PORT",
+      "default_value": "8080",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "SFTP порт (авто если Pterodactyl)",
+      "description": "Порт SFTP. На Pterodactyl авто-берётся из PTERODACTYL_ALLOCATED_PORTS[3]",
+      "env_variable": "VPS_SFTP_PORT",
+      "default_value": "8024",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "Порт метрик (авто если Pterodactyl)",
+      "description": "Порт Prometheus метрик. На Pterodactyl авто-берётся из PTERODACTYL_ALLOCATED_PORTS[4]",
+      "env_variable": "VPS_METRICS_PORT",
+      "default_value": "9090",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer|between:1024,65535"
+    },
+    {
+      "name": "Автоматический TLS (Let's Encrypt)",
+      "description": "Включить автоматическое получение SSL-сертификатов через Let's Encrypt для домена",
+      "env_variable": "VPS_AUTO_TLS",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "Домен",
+      "description": "Домен для reverse proxy и Let's Encrypt (например vps.example.com)",
+      "env_variable": "VPS_DOMAIN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string|max:255"
+    },
+    {
+      "name": "Включить ботов",
+      "description": "Включить Telegram/Discord ботов для управления VPS",
+      "env_variable": "VPS_BOT_ENABLE",
+      "default_value": "false",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "Токен Telegram бота",
+      "description": "Токен Telegram бота (от @BotFather)",
+      "env_variable": "VPS_TELEGRAM_TOKEN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "name": "Токен Discord бота",
+      "description": "Токен Discord бота",
+      "env_variable": "VPS_DISCORD_TOKEN",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "name": "ID чата администратора",
+      "description": "Telegram/Discord chat ID для уведомлений и команд",
+      "env_variable": "VPS_ADMIN_CHAT_ID",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    },
+    {
+      "name": "Обход ограничений хостинга",
+      "description": "Включить обход ограничений Pterodactyl/Minecraft хостинга (спуфинг, скрытие процессов, порт редирект)",
+      "env_variable": "VPS_BYPASS",
+      "default_value": "true",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "Скрытие процессов",
+      "description": "Скрывать запущенные процессы от панели Pterodactyl",
+      "env_variable": "VPS_HIDE_PROCESSES",
+      "default_value": "true",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "Автообновление",
+      "description": "Автоматически проверять и устанавливать обновления VPS Core",
+      "env_variable": "VPS_AUTO_UPDATE",
+      "default_value": "true",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|boolean"
+    },
+    {
+      "name": "URL скачивания VPS Core",
+      "description": "Кастомный URL для скачивания VPS Core JAR (оставьте пустым для GitHub releases)",
+      "env_variable": "VPS_DOWNLOAD_URL",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string"
+    }
+  ]
+}
